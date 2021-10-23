@@ -1,0 +1,45 @@
+<script src="app.py"></script>
+<html>
+    {% block header %}<head></head>{% endblock %}
+    {% block content %}
+    <body class="main">
+        <link rel= "stylesheet" type= "text/css" href="/static/styles/app.css">
+        <div class="header">
+            <h1>&lambda;PyRisk</h1>
+        </div>
+        <!-- <h2>Ticker: {{ticker}}</h2> -->
+        <!-- <form method=get action="/">
+            <input name="num_x_points" type=number value="{{num_x_points}}" />
+            <input type=submit value="update graph">
+        </form>
+        <form method=get action="/">
+            <input name="ticker" type=string value="{{ticker}}" />
+            <input type=submit value="update graph">
+        </form> -->
+        <form method="POST" action="{{url_for('index')}}" >
+            <input type="text" name="ts"/>
+            <input type="submit" value="download data"/>
+        </form>
+        </div>
+        <h3><a href="/mplfinance-{{ticker}}-{{syear}}.png">MPLFinance</a></h3>
+        <div class="plotframe">
+                    <img src="/mplfinance-{{ticker}}-{{syear}}.png"
+                        alt="mplfinance"
+                        width="40%" >
+                    <img src="/mplfinance-{{ticker2}}-{{syear2}}.png"
+                        alt="mplfinance"
+                        width="40%" >
+                    
+        </div>
+        <!-- <h3><a href="//matplot-as-image-{{num_x_points}}.svg">Plot as a SVG</a></h3>
+                    <img src="/matplot-as-image-{{num_x_points}}.svg"
+                        alt="random points as svg"
+                        width="40%" >
+        <h3>Plot as a png</h3>
+        <img src="/matplot-as-image-{{num_x_points}}.png"
+            alt="random points as png"
+            height="40%"
+        > -->
+    </body>
+    {% endblock %}
+</html>

@@ -1,0 +1,31 @@
+main {
+    /* font-size: x-large; */
+    display: flex;
+    flex-direction: column;
+    justify-content: top;
+}
+.plotframe {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    /* padding: 1em; */
+}
+.header{
+    background-color: #BA5536;
+    display: flex;
+   /* let's align the items so everything is nice and centered */
+    align-items: center;   
+}
+head {
+    font-size: x-large;
+    background-color: red;
+}
+h1 {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: rgb(37, 37, 37);
+}
+img {
+    width: 49%;
+    height: auto;
+    border-style: groove;
+}

@@ -1,0 +1,19 @@
+{
+    "symbol": "BTC",
+    "price": "94.00",
+    "risk": "0.739",
+    "change": [
+        null,
+        null,
+        null
+    ]
+}{
+    "symbol": "ETH",
+    "price": null,
+    "risk": null,
+    "change": [
+        null,
+        null,
+        null
+    ]
+}

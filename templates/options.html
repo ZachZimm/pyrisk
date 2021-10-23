@@ -1,0 +1,29 @@
+<script src="app.py"></script>
+<html>
+    {% block header %}<head></head>{% endblock %}
+    {% block content %}
+    <body class="main">
+        <link rel= "stylesheet" type= "text/css" href="/static/styles/app.css">
+        <div class="header">
+            <h1>&lambda;PyRisk - Options</h1>
+        </div>
+        {{options}}
+        <form method="POST" action="{{url_for('index')}}" >
+            <input type="text" name="ts"/>
+            <input type="submit" value="download data"/>
+        </form>
+        </div>
+
+        <div class="plotframe">
+                    <img src="/mplfinance-{{ticker}}-{{syear}}.png"
+                        alt="mplfinance"
+                        width="40%" >
+                    <img src="/mplfinance-{{ticker2}}-{{syear2}}.png"
+                        alt="mplfinance"
+                        width="40%" >
+                    
+        </div>
+        {{optchain}}
+    </body>
+    {% endblock %}
+</html>
