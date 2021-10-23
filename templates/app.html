@@ -1,11 +1,20 @@
 <script src="app.py"></script>
-<html>
+<html class="main">
     {% block header %}<head></head>{% endblock %}
     {% block content %}
-    <body class="main">
+    <body>
         <link rel= "stylesheet" type= "text/css" href="/static/styles/app.css">
         <div class="header">
-            <h1>&lambda;PyRisk</h1>
+            <div class="headeritem">
+                <h1><a class='headertext' href="/">&lambda; PyRisk</a></h1>
+            </div>
+            <div class="headeritem">
+                <form method="POST" action="{{url_for('index')}}" >
+                    <input class="textfield" type="text" name="ts"/>
+                    <input class="button" type="submit" value="download data"/>
+                </form>
+            </div>
+            <div class='headeritem'><h2 ><a class='headertext' href="/mplfinance-{{ticker}}-{{syear}}.png">MPLFinance</a></h2></div>
         </div>
         <!-- <h2>Ticker: {{ticker}}</h2> -->
         <!-- <form method=get action="/">
@@ -16,12 +25,9 @@
             <input name="ticker" type=string value="{{ticker}}" />
             <input type=submit value="update graph">
         </form> -->
-        <form method="POST" action="{{url_for('index')}}" >
-            <input type="text" name="ts"/>
-            <input type="submit" value="download data"/>
-        </form>
+        
         </div>
-        <h3><a href="/mplfinance-{{ticker}}-{{syear}}.png">MPLFinance</a></h3>
+        
         <div class="plotframe">
                     <img src="/mplfinance-{{ticker}}-{{syear}}.png"
                         alt="mplfinance"

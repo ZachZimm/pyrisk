@@ -17,7 +17,7 @@ from matplotlib.figure import Figure
 
 import pandas as pd
 import numpy as np
-from pandas_datareader import data as web
+# from pandas_datareader import data as web
 import yfinance
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -84,9 +84,10 @@ def plot_svg(num_x_points=50):
 def plot_finance(ticker='AAPL', syear=2010):
     output = io.BytesIO()
     data = get_df_from_csv(ticker)
-    indicators = ['risk','riskscatter'] 
+    # indicators = ['risk','riskscatter'] 
     # indicators = ['sma']
-    output = mplfinance_plot(data, ticker, indicators, 'candle', syear, 1, 1, 2021, 10, 22)
+    indicators = ['risk','riskscatter','sma'] 
+    output = mplfinance_plot(data, ticker, indicators, 'candlestick', syear, 1, 1, 2021, 10, 22)
     return Response(output.getvalue(), mimetype="image/png")
 
 # @app.route("/updatedata", methods=["POST", "GET"])
@@ -104,7 +105,7 @@ def plot_finance(ticker='AAPL', syear=2010):
 
 def get_df_from_csv(ticker):
     try:
-        df = pd.read_csv('./' + ticker + '.csv')
+        df = pd.read_csv('./data/' + ticker + '.csv')
     except FileNotFoundError:
         print('File does not exist')
     else:
@@ -114,13 +115,13 @@ def get_df_from_csv(ticker):
 def save_to_csv_yahoo(ticker):
     # df = web.DataReader(ticker.strip(), 'yahoo', start, end)
     df = yfinance.download(ticker.strip(), period="MAX")
-    df.to_csv(ticker + ".csv")
+    df.to_csv('./data/' + ticker + ".csv")
     return df
 
 def define_risk(df):
     ma50 = 0 # To calculate 'Risk'
-    df['sma50'] = df['Adj Close'].rolling(window=50, min_periods=1).mean()
-    df['sma350'] = df['Adj Close'].rolling(window=350, min_periods=1).mean()
+    df['sma50'] = df['Close'].rolling(window=50, min_periods=1).mean()
+    df['sma350'] = df['Close'].rolling(window=350, min_periods=1).mean()
     df['Risk'] = df['sma50']/df['sma350'] # 'Risk'
     max_value = df['Risk'].max()
     min_value = df['Risk'].min()
@@ -138,7 +139,7 @@ def define_risk_scatter(df,ticker):
         bbound1 = 0.7
         bbound2 = 0.6
         sbound1 = 0.8
-        sbound2 = 0.9
+        sbound2 = 0.91
     elif(ticker == 'BTC-USD'):
         bbound1 = 0.35
         bbound2 = 0.24
@@ -150,18 +151,16 @@ def define_risk_scatter(df,ticker):
         sbound1 = 0.90
         sbound2 = 0.8
 
-    df['BuySignal1'] = 0.0
-    df['BuySignal1'] = np.where(df['Risk'] < bbound1, df['Adj Close'] * 0.95, np.nan)
-    df['BuySignal2'] = 0.0
-    df['BuySignal2'] = np.where(df['Risk'] < bbound2, df['Adj Close'] * 0.95, np.nan)
-    df['SellSignal1'] = np.where(df['Risk'] > sbound1, df['Adj Close'] * 1.05, np.nan)
-    df['SellSignal2'] = np.where(df['Risk'] > sbound2, df['Adj Close'] * 1.05, np.nan)
+    df['BuySignal1'] = np.where(df['Risk'] < bbound1, df['Close'] * 0.94, np.nan)
+    df['BuySignal2'] = np.where(df['Risk'] < bbound2, df['Close'] * 0.94, np.nan)
+    df['SellSignal1'] = np.where(df['Risk'] > sbound1, df['Close'] * 1.04, np.nan)
+    df['SellSignal2'] = np.where(df['Risk'] > sbound2, df['Close'] * 1.04, np.nan)
     return df
 
 def define_sma(df):
-    df['sma20'] = df['Adj Close'].rolling(window=20, min_periods=1).mean()
-    df['sma140'] = df['Adj Close'].rolling(window=140, min_periods=1).mean()
-    df['sma200'] = df['Adj Close'].rolling(window=200, min_periods=1).mean()
+    df['sma20'] = df['Close'].rolling(window=20, min_periods=1).mean()
+    df['sma140'] = df['Close'].rolling(window=140, min_periods=1).mean()
+    df['sma200'] = df['Close'].rolling(window=200, min_periods=1).mean()
     return df
 
 def plot_indicator(df,index):   # Not really sure if this works, I haven't used it for a long time. Maybe the matlibplot SVG chart would be better for standalone indicators anyways? Or a second panel?
@@ -194,9 +193,9 @@ def mplfinance_plot(df, ticker, indicators, chart_type, syear, smonth, sday, eye
         df = define_sma(df)
     df_sub = df.loc[start:end]
     
-    s = mpf.make_mpf_style(base_mpf_style='charles', rc={'font.size': 24, 'text.color': '#EDEDED',
-                            'axes.labelcolor':'#EDEDED', 'xtick.color':'#EDEDED', 'ytick.color':'#EDEDED'}, 
-                            facecolor="#434345", edgecolor="#000000", figcolor="#434345")
+    s = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size': 24, 'text.color': '#c4d0ff',
+                            'axes.labelcolor':'#c4d0ff', 'xtick.color':'#c4d0ff', 'ytick.color':'#c4d0ff'}, #EDEDEDc4d0ff 
+                            facecolor="#434345", edgecolor="#000000", figcolor="#292929", y_on_right=False) 
     fig = mpf.figure(figsize=(12, 8), style=s)
     adps = []
     title = ticker
