@@ -117,12 +117,8 @@ def save_to_csv_yahoo(ticker):
     df.to_csv(ticker + ".csv")
     return df
 
-def define_risk(df, ticker):
-    ma20 = 0 # To plot, because it's meaningful
-    for x in range(140):
-        ma20w = df['Adj Close'].shift(x) + ma20
+def define_risk(df):
     ma50 = 0 # To calculate 'Risk'
-    # df['sma20'] = df['Adj Close'].rolling(window=20, min_periods=1).mean()
     df['sma50'] = df['Adj Close'].rolling(window=50, min_periods=1).mean()
     df['sma350'] = df['Adj Close'].rolling(window=350, min_periods=1).mean()
     df['Risk'] = df['sma50']/df['sma350'] # 'Risk'
@@ -135,11 +131,6 @@ def define_risk(df, ticker):
     # else:
     #     df['Risk'] = (df['Risk'] / max_value)
     df['Risk'] = (df['Risk'] - min_value) / (max_value - min_value)
-    bbound1 = 0
-    bbound2 = 0
-    sbound1 = 1
-    sbound2 = 1
-    
     return df
 
 def define_risk_scatter(df,ticker):
@@ -196,28 +187,30 @@ def mplfinance_plot(df, ticker, indicators, chart_type, syear, smonth, sday, eye
     end = f"{eyear}-{emonth}-{eday}"
     df.index = pd.DatetimeIndex(df['Date'])
     if('risk' in indicators):
-        df = define_risk(df, ticker)
+        df = define_risk(df)
         if(('riskscatter' in indicators) and (ticker in risk_scatter_tickers)):
             df = define_risk_scatter(df, ticker)
     if('sma' in indicators):
         df = define_sma(df)
     df_sub = df.loc[start:end]
     
-    s = mpf.make_mpf_style(base_mpf_style='charles', rc={'font.size': 24})
+    s = mpf.make_mpf_style(base_mpf_style='charles', rc={'font.size': 24, 'text.color': '#EDEDED',
+                            'axes.labelcolor':'#EDEDED', 'xtick.color':'#EDEDED', 'ytick.color':'#EDEDED'}, 
+                            facecolor="#434345", edgecolor="#000000", figcolor="#434345")
     fig = mpf.figure(figsize=(12, 8), style=s)
     adps = []
     title = ticker
     if('risk' in indicators):
-        adps.append(mpf.make_addplot(df_sub['Risk'], secondary_y=True, color='#ff5500')) # Risk line plot and reference lines
-        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.1, secondary_y=True, color='#0000ff'))
-        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.2, secondary_y=True, color='#003cff'))
-        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.3, secondary_y=True, color='#0078ff'))
-        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.4, secondary_y=True, color='#009dff'))
-        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.5, secondary_y=True, color='#00c5ff'))
-        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.6, secondary_y=True, color='#00ee83'))
-        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.7, secondary_y=True, color='#00f560'))
-        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.8, secondary_y=True, color='#a2ff00'))
-        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.9, secondary_y=True, color='#ff0000'))
+        adps.append(mpf.make_addplot(df_sub['Risk'], color='#ff5500', panel=1))#, secondary_y=True)) # Risk line plot and reference lines
+        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.1, color='#0000ff', panel=1))# secondary_y=True,))
+        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.2, color='#003cff', panel=1))# secondary_y=True,))
+        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.3, color='#0078ff', panel=1))# secondary_y=True,))
+        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.4, color='#009dff', panel=1))# secondary_y=True,))
+        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.5, color='#00c5ff', panel=1))# secondary_y=True,))
+        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.6, color='#00ee83', panel=1))# secondary_y=True,))
+        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.7, color='#00f560', panel=1))# secondary_y=True,))
+        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.8, color='#a2ff00', panel=1))# secondary_y=True,))
+        adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.9, color='#ff0000', panel=1))# secondary_y=True,))
     if(('risk' in indicators) and ('riskscatter' in indicators) and (ticker in risk_scatter_tickers)): # Buy/Sell scatter plot
         adps.append(mpf.make_addplot(df_sub['BuySignal1'],type="scatter", color=['#00aa00']))
         adps.append(mpf.make_addplot(df_sub['BuySignal2'],type="scatter", color=['#005500']))

@@ -1,5 +1,4 @@
-.csv
-.bak
-.ipnb
-/.ipynb_checkpoints
-/__pycache__
+*.csv
+*.bak
+.ipynb_checkpoints/
+__pycache__/
