@@ -23,7 +23,6 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import datetime as dt
 import mplfinance as mpf
-from sklearn import preprocessing
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -38,11 +37,10 @@ def index():
     ticker = str(request.args.get("ticker", 'GLP'))
     tickers = str(request.args.get("tickers", 'MSFT'))
     # print('This is standard output', file=sys.stderr)
-    # in a real app you probably want to use a flask template.
     if(request.method == "POST"):
         tickers = request.form['ts']
-        # download_multiple_stocks(1999, 1, 1, 2021, 10, 20, *tickers)
-        save_to_csv_yahoo(tickers, 1999, 1, 1, 2021, 10, 22)
+        download_multiple_stocks(tickers)
+        # save_to_csv_yahoo(tickers, 1999, 1, 1, 2021, 10, 22)
         print('\n\n\n\n\n' + str(tickers) + '\n\n\n\n', file=sys.stderr)
     else:
         print('\n\n\n\n\n' + 'No Tickers' + '\n\n\n\n', file=sys.stderr)
@@ -91,27 +89,16 @@ def plot_finance(ticker='AAPL', syear=2010):
     output = mplfinance_plot(data, ticker, indicators, 'candle', syear, 1, 1, 2021, 10, 22)
     return Response(output.getvalue(), mimetype="image/png")
 
-@app.route("/updatedata", methods=["POST", "GET"])
-def update_data():
-    # request.path = "/"
-    # print('This is standard output\n\n\n\n\n\n\n\n\n\n\n', file=sys.stderr)
-    # print('Tickers:' + str(request.form['tickers']))
-    if (request.method) == "POST":
-        # tickers = ['FB','AMZN','AAPL','NFLX','GOOGL', 
-        #     'SHLX','BABA','SPCE','AMD','BSX','GLP','DIS',
-        #     'MSFT','SPY','BTC-USD','ARKF']
-        tickers = request.form['ts'].split(',')
-        # tickers = ['SfPY']
-        # flash(tickers)
-        print('\n\n\n\n\n' + str(tickers) + '\n\n\n\n', file=sys.stderr)
-        download_multiple_stocks(1999, 1, 1, 2021, 10, 20, *tickers)
-        return index()
-    else:
-        ftickers = request.form['ts']
-        return "<h1>{ftickers}</h1>"
-        # return "<h1>{tickers}}</h1>"
-    # flash("Flash!")
-
+# @app.route("/updatedata", methods=["POST", "GET"])
+# def update_data():
+#     if (request.method) == "POST":
+#         tickers = request.form['ts'].split(',')
+#         print('\n\n\n\n\n' + str(tickers) + '\n\n\n\n', file=sys.stderr)
+#         download_multiple_stocks(1999, 1, 1, 2021, 10, 20, *tickers)
+#         return index()
+#     else:
+#         ftickers = request.form['ts']
+#         return "<h1>{ftickers}</h1>"
     # return redirect(url_for("index", ticker='SPY', num_x_points=50))
     
 
@@ -124,10 +111,7 @@ def get_df_from_csv(ticker):
         df = df.dropna(subset=['Adj Close'])
         return df
 
-def save_to_csv_yahoo(ticker, syear, smonth, sday, eyear, emonth, eday):
-    start = dt.datetime(syear, smonth, sday)
-    end = dt.datetime(eyear, emonth, eday)
-    
+def save_to_csv_yahoo(ticker):
     # df = web.DataReader(ticker.strip(), 'yahoo', start, end)
     df = yfinance.download(ticker.strip(), period="MAX")
     df.to_csv(ticker + ".csv")
@@ -189,7 +173,7 @@ def define_sma(df):
     df['sma200'] = df['Adj Close'].rolling(window=200, min_periods=1).mean()
     return df
 
-def plot_indicator(df,index):
+def plot_indicator(df,index):   # Not really sure if this works, I haven't used it for a long time. Maybe the matlibplot SVG chart would be better for standalone indicators anyways? Or a second panel?
     df.index = pd.DatetimeIndex(df['Date'])
     s = mpf.make_mpf_style(base_mpf_style='charles', rc={'font.size': 8})
     fig = mpf.figure(figsize=(12, 8),style=s)
@@ -200,11 +184,12 @@ def plot_indicator(df,index):
     return buf
 
 
-def download_multiple_stocks(syear, smonth, sday, eyear, emonth, eday, *args):
-    if(len(args) == 1):
-        save_to_csv_yahoo(args[0], syear, smonth, sday, eyear, emonth, eday)
-    for x in args:
-        save_to_csv_yahoo(x, syear, smonth, sday, eyear, emonth, eday)
+def download_multiple_stocks(tickers):
+    tickers = tickers.split(' ')
+    if(len(tickers) == 1):
+        save_to_csv_yahoo(tickers[0])
+    for x in tickers:
+        save_to_csv_yahoo(x)
 
 def mplfinance_plot(df, ticker, indicators, chart_type, syear, smonth, sday, eyear, emonth, eday):
     start = f"{syear}-{smonth}-{sday}"
@@ -218,7 +203,7 @@ def mplfinance_plot(df, ticker, indicators, chart_type, syear, smonth, sday, eye
         df = define_sma(df)
     df_sub = df.loc[start:end]
     
-    s = mpf.make_mpf_style(base_mpf_style='charles', rc={'font.size': 32})
+    s = mpf.make_mpf_style(base_mpf_style='charles', rc={'font.size': 24})
     fig = mpf.figure(figsize=(12, 8), style=s)
     adps = []
     title = ticker
@@ -245,7 +230,7 @@ def mplfinance_plot(df, ticker, indicators, chart_type, syear, smonth, sday, eye
     buf = io.BytesIO()
     # hlines = dict(hlines=[0.2,0.8], colors=['g','r'], linestyle='-.') # Only works on primary y axis
     mpf.plot(df_sub, type=chart_type, title=title, tight_layout=True, addplot=adps,
-              volume=False, figscale=3, show_nontrading=True, style='charles', 
+              volume=False, figscale=3, show_nontrading=True, style=s, 
               savefig=buf)#panel_ratios=(3,1),hlines=hlines,mav=(50,350))
     return buf
 
