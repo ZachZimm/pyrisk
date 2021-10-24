@@ -1,0 +1,22 @@
+Connect to Kraken
+    Download data & Make up-to-date calculations
+        get new data every 5m? 
+        append to a dataframe? how is that going to work?
+            will I have to manage what is loaded into memory from disk? probably not, really.
+                Is garbage collection a thing in python? could I just pass start and end date/times to the reader function and delete the full read data?
+    Get account information
+        monitor ETH/BTC ratio
+    Send orders
+        market and limit
+
+Check out my old 15m hull strategy filtered with momentum on ETH/BTC (though I may have a hard time getting that working in python)
+    Set a 1% profit target 
+    Balance target? 60% ETH / 40% BTC target kind of thing?
+    Selling + buying back in to short? It's the same as buying in to BTC/ETH as it goes up, right?
+        When trading against USD, you tend not to want that part of the pair. But When you want to hold both sides, shorting is as simple as selling one for the other with the intention of rebalancing 
+What is going on with these secondary Y axes?
+    I should look into it
+        and if nobody has made a post about it, I might do it myself
+    
+This passing data from html to python should be pretty basic, just look into it and get it working
+    I could pass better start/end date/times much more easily, and switch indicators too.

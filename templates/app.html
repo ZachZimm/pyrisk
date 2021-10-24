@@ -10,9 +10,14 @@
             </div>
             <div class="headeritem">
                 <form method="POST" action="{{url_for('index')}}" >
-                    <input class="textfield" type="text" name="ts"/>
+                    <!-- <div> -->
+                        <input class="textfield" type="text" name="ts"/>
+                        <!-- <input class="textfield" type="text" name="is" value="{{indicators}}"/> -->
+                    <!-- </div> -->
+                    
                     <input class="button" type="submit" value="download data"/>
                 </form>
+                
             </div>
             <div class='headeritem'><h2 ><a class='headertext' href="/mplfinance-{{ticker}}-{{syear}}.png">MPLFinance</a></h2></div>
         </div>
