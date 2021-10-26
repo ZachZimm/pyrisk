@@ -2,7 +2,7 @@ import sys
 import io
 import random
 import logging
-from flask import Flask, flash, Response, redirect, request, render_template, request, url_for
+from flask import Flask, flash, Response, redirect, request, render_template, url_for
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.backends.backend_svg import FigureCanvasSVG
 from matplotlib.figure import Figure
@@ -18,32 +18,61 @@ import mplfinance as mpf
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
-risk_scatter_tickers = ['BTC-USD', 'SPY']
+RISK_SCATTER_TICKERS = ['BTC-USD', 'SPY']
+END=dt.datetime.today()+ dt.timedelta(days=1)
+START=END - dt.timedelta(days=365)
 
 
 @app.route("/",methods=["POST","GET"])
 def index():
-    """ Returns html with the img tag for your plot.
-    """
-    num_x_points = int(request.args.get("num_x_points", 50))
-    ticker = str(request.args.get("ticker", 'GLP'))
-    tickers = str(request.args.get("tickers", 'MSFT'))
-    ticker2='SPY'
-    # print('This is standard output', file=sys.stderr)
+    # ticker = str(request.args.get("ticker", 'GLP'))
+    ticker='BTC-USD'
+    default_indicators = 'risk riskscatter'
     if(request.method == "POST"):
-        tickers = request.form['ts']
-        download_multiple_stocks(tickers)
-        ticker2 = tickers.split(' ')[0]
-        return plot_finance(ticker2, 2015)
-        print('\n\n\n\n\n' + str(tickers) + '\n\n\n\n', file=sys.stderr)
-    else:
-        print('\n\n\n\n\n' + 'No Tickers' + '\n\n\n\n', file=sys.stderr)
-    return render_template("app.html", num_x_points=num_x_points, ticker='BTC-USD', syear=2017,
-                                        ticker2=ticker2, syear2=2006)
+        
+        # form_name = request.form['form-name']
+        if('download_tickers' in request.form):
+            download_tickers = request.form['download_tickers']
+            download_multiple_stocks(download_tickers)
+            ticker=download_tickers.split(' ')[0]
+        elif('ticker' in request.form):
+            new_tick = request.form['ticker']
+            new_tick = new_tick.replace('-','.') # yahoo uses '-' in crypto tickers (BTC-USD) which interferes with the retrieving of variables from the url
+            new_tick = new_tick.replace('/','')
+            new_start = request.form['start']
+            new_start = new_start.replace('-','.') # same thing with dates, so I replaced them with '.'
+            new_end = request.form['end']
+            new_end = new_end.replace('-','.')
+            new_start_dt = dt.datetime.today() - dt.timedelta(days=365) # Maybe a slightly wasetful way to handle no
+            if(new_start != ''):                                        # entry, but oh well
+                new_start_dt = dt.datetime.strptime(new_start, "%Y.%m.%d").date()
+                global START
+                START = new_start_dt
+            new_end_dt = dt.datetime.today() + dt.timedelta(days=1) # Because crypto uses UTC time, sometimes
+            if(new_end != ''):                                      # Your local day will be a day behind,
+                new_end_dt = dt.datetime.strptime(new_end, "%Y.%m.%d").date() # Causing the latest daily candle
+                global END                                          # not to appear
+                END = new_end_dt
+            
+
+            
+            new_indicators = request.form['indicators']
+            if(new_indicators == ''):
+                new_indicators = 'none'
+            # return redirect("/mplfinance2-{new_tick}-{new_start}-{new_end}-{new_indicators}.png")
+            # return redirect(url_for('plot_finance2',ticker=new_tick, start=new_start, end=new_end, indicators=new_indicators))
+            return render_template("app.html", ticker=new_tick, sday=new_start_dt.day, smonth=new_start_dt.month,
+                                    syear=new_start_dt.year, eday=new_end_dt.day, emonth=new_end_dt.month, 
+                                    eyear=new_end_dt.year, indicators=new_indicators)
+
+        # print('\n\n\n\n\n' + str(download_tickers) + '\n\n\n\n', file=sys.stderr)
+    return render_template("app.html", ticker=ticker, sday=START.day, smonth=START.month,
+                                    syear=START.year, eday=END.day, emonth=END.month, 
+                                    eyear=END.year, indicators=default_indicators)
 
 @app.route("/options", methods=["POST", "GET"])
-def options():
-    ticker = yfinance.Ticker('MSFT')
+def options(): # This page doesn't do much, I kind of switched focus when I realized that yfinance
+    ticker = yfinance.Ticker('MSFT') # doesn't provide historical options pricing
     optchain = ticker.option_chain(ticker.options[0])
     return render_template("options.html", options=ticker.options, optchain=optchain[1]['contractSymbol'])
 
@@ -76,8 +105,23 @@ def plot_finance(ticker='AAPL', syear=2010):
     data = get_df_from_csv(ticker)
     # indicators = ['risk','riskscatter'] 
     indicators = [ 'risk','riskscatter', 'sma'] #'riskdif']
-    # indicators = ['risk','riskscatter', 'sma', 'ext'] 
+    # indicators = ['risk','riskscatter', 'sma', 'ext', 'hull'] 
     output = mplfinance_plot(data, ticker, indicators, 'candlestick', syear, 1, 1, 2021, 10, 22)
+    return Response(output.getvalue(), mimetype="image/png")
+
+@app.route("/mplfinance2-<string:ticker>-<start>-<end>-<indicators>.png", methods=["POST","GET"])
+def plot_finance2(ticker, start, end, indicators):
+    output = io.BytesIO()
+    ticker = ticker.replace('.','-')
+    data = get_df_from_csv(ticker)
+    indicators = indicators.split(' ')
+    start = dt.datetime.strptime(start, "%Y.%m.%d").date()
+    end = dt.datetime.strptime(end, "%Y.%m.%d").date()
+    # indicators = ['risk','riskscatter'] 
+    # indicators = [ 'risk','riskscatter', 'sma'] #'riskdif']
+    # indicators = ['risk','riskscatter', 'sma', 'ext'] 
+    output = mplfinance_plot(data, ticker, indicators, 'candlestick', start.year, start.month, start.day, end.year, end.month, end.day)
+    print('\n\n\n\n\n' + str(ticker) + '\n' + str(start) + '\n' + str(end) + '\n' + str(indicators) + '\n\n\n\n\n',file=sys.stderr)
     return Response(output.getvalue(), mimetype="image/png")
 
 def get_df_from_csv(ticker):
@@ -194,7 +238,6 @@ def plot_indicator(df,index):   # Not really sure if this works, I haven't used 
     mpf.plot(df, type='line', ax=ax, show_nontrading=True,savefig=buf)
     return buf
 
-
 def download_multiple_stocks(tickers):
     tickers = tickers.split(' ')
     if(len(tickers) == 1):
@@ -208,7 +251,7 @@ def mplfinance_plot(df, ticker, indicators, chart_type, syear, smonth, sday, eye
     df.index = pd.DatetimeIndex(df['Date'])
     if('risk' in indicators): # This section is kind of a mess. And it would be better if I only had one if/else block,
         df = define_risk(df)  # but I would rather have data calculated for all dates than do df_sub before this block
-        if(('riskscatter' in indicators) and (ticker in risk_scatter_tickers)):
+        if(('riskscatter' in indicators) and (ticker in RISK_SCATTER_TICKERS)):
             df = define_risk_scatter(df, ticker)
     if('sma' in indicators):
         df = define_sma(df)
@@ -242,7 +285,7 @@ def mplfinance_plot(df, ticker, indicators, chart_type, syear, smonth, sday, eye
         adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.7, color='#00f560', panel=1))# secondary_y=True,))
         adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.8, color='#a2ff00', panel=1))# secondary_y=True,))
         adps.append(mpf.make_addplot((df_sub['Risk'] * 0) + 0.9, color='#ff0000', panel=1))# secondary_y=True,))
-    if(('risk' in indicators) and ('riskscatter' in indicators) and (ticker in risk_scatter_tickers)): # Buy/Sell scatter plot
+    if(('risk' in indicators) and ('riskscatter' in indicators) and (ticker in RISK_SCATTER_TICKERS)): # Buy/Sell scatter plot
         # adps.append(mpf.make_addplot(df_sub['BuySignal1'],type="scatter", color=['#00aa00']))
         # adps.append(mpf.make_addplot(df_sub['BuySignal2'],type="scatter", color=['#005500']))
         # adps.append(mpf.make_addplot(df_sub['SellSignal1'],type="scatter", color=['#ff0000']))
@@ -260,8 +303,13 @@ def mplfinance_plot(df, ticker, indicators, chart_type, syear, smonth, sday, eye
         adps.append(mpf.make_addplot(df_sub['hma140'],color='#adff2f'))
         adps.append(mpf.make_addplot(df_sub['hma200'],color='#adff2f'))
     if(('ext' in indicators) and ('sma' in indicators)):
-        adps.append(mpf.make_addplot(df_sub['ext'], panel=2))
-        adps.append(mpf.make_addplot(df_sub['E0'], panel=2))
+        adps.append(mpf.make_addplot(df_sub['ext'],color='#adff2f', panel=1))
+        adps.append(mpf.make_addplot(df_sub['E0'], panel=1))
+    if('line' in indicators):
+        chart_type = 'line'
+    if('renko' in indicators):
+        chart_type = 'renko' # doesn't work when addplot is set in mpf.plot()
+        adps = []
     buf = io.BytesIO()
     # hlines = dict(hlines=[0.2,0.8], colors=['g','r'], linestyle='-.') # Only works on primary y axis
     mpf.plot(df_sub, type=chart_type, title=title, tight_layout=True, addplot=adps,
@@ -270,8 +318,7 @@ def mplfinance_plot(df, ticker, indicators, chart_type, syear, smonth, sday, eye
     return buf
 
 if __name__ == "__main__":
-    import webbrowser
-
+    # import webbrowser
     # webbrowser.open("http://127.0.0.1:5000/")
     app.run(debug=True, host='0.0.0.0')
     app.debug = True

@@ -9,6 +9,19 @@
     background-color: #434345 ;
     color:#c4d0ff;
 }
+::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: #c4d0ff;
+    opacity: 0.6; /* Firefox */
+
+  }
+  
+  :-ms-input-placeholder { /* Internet Explorer 10-11 */
+    color: red;
+  }
+  
+  ::-ms-input-placeholder { /* Microsoft Edge */
+    color: red;
+  }
 .button {
     background-color: #5c5c5d ;
     color:#c4d0ff;
@@ -47,6 +60,15 @@
     padding-left: 1em;
     padding-right: 25em;
     justify-content:start;
+}
+.secondheader {
+    background: #606c88;
+    width: 100%;
+    display:flex;
+    flex-wrap: wrap;
+    flex-direction:row;
+    justify-content: space-between;
+
 }
 head {
     font-size: x-large;
