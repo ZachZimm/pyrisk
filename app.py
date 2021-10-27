@@ -181,9 +181,11 @@ def define_risk(df):
     df['hrisk'] = normalize(df['hrisk'])
     return df
 
-def define_risk_dif(df):
+def define_risk_dif(df): # Is this a measure of momentum?
     df['riskdif'] = df['risk'] - df['hrisk']
-    df['0'] = (df['risk'] * 0)
+    df['0'] = (df['riskdif'] * 0)
+    df['difcrossover'] = np.where((df['riskdif'] > 0) & (df['riskdif'].shift(1) <= 0), df['Close'] * 1, np.nan)
+    df['difcrossunder'] = np.where((df['riskdif'] < 0) & (df['riskdif'].shift(1) >= 0), df['Close'] * 1, np.nan)
     return df
 
 def define_risk_scatter(df,ticker):
@@ -250,11 +252,6 @@ def download_multiple_stocks(tickers):
 
 def intersection(lst1, lst2): # Returns the intersection of two lists
     return list(set(lst1) & set(lst2))
-    # for x in req_list:                
-    #     if (x in str_list):
-    #         return True
-    # else:
-    #     return False
         
 def define_indicators(_ticker, _df, _indicators):
     reqSMA = ['sma', 'ext', 'risk', 'riskscatter', 'riskdif'] # SMA (simple moving average)
@@ -288,11 +285,11 @@ def add_indicators(_ticker, _df,_indicators):
         # _adps.append(mpf.make_addplot(_df['hma9'],color='#adff2f'))
         _adps.append(mpf.make_addplot(_df['hma140'],color='#adff2f'))
         _adps.append(mpf.make_addplot(_df['hma200'],color='#adff2f'))
-        _adps.append(mpf.make_addplot(_df['hma500'],color='#adff2f'))
-    if('ext' in _indicators):
+        # _adps.append(mpf.make_addplot(_df['hma500'],color='#adff2f')) For some reason, HMA() only uses df_sub. I think it has something to do with
+    if('ext' in _indicators):                                                                                                       #df[].rolling()
         _adps.append(mpf.make_addplot(_df['ext'],color='#adff2f', panel=panels))
-        _adps.append(mpf.make_addplot(_df['E0'], panel=panels))
-        # adps.append(mpf.make_addplot(_df['0'], color='#0000ff',panel=panels))
+        # _adps.append(mpf.make_addplot(_df['E0'], panel=panels))
+        # _adps.append(mpf.make_addplot(_df['0'], color='#0000ff',panel=panels))
         panels = panels + 1
     if('risk' in _indicators):
         _adps.append(mpf.make_addplot(_df['risk'], color='#ff5500', panel=panels)) # while high values represent high instantaneous risk. The
@@ -309,31 +306,35 @@ def add_indicators(_ticker, _df,_indicators):
         panels = panels + 1
     if(('riskscatter' in _indicators)): # Buy/Sell scatter plot
         # SMA calculated risk signals
-        # _adps.append(mpf.make_addplot(_df['BuySignal1'],type="scatter", color=['#00aa00']))
-        # _adps.append(mpf.make_addplot(_df['BuySignal2'],type="scatter", color=['#005500']))
-        # _adps.append(mpf.make_addplot(_df['SellSignal1'],type="scatter", color=['#ff0000']))
-        # _adps.append(mpf.make_addplot(_df['SellSignal2'],type="scatter", color=['#8a0000']))
+        # _adps.append(mpf.make_addplot(_df['BuySignal1'] * 0.96,type="scatter", color=['#00aa00']))
+        # _adps.append(mpf.make_addplot(_df['BuySignal2'] * 0.96,type="scatter", color=['#005500']))
+        # _adps.append(mpf.make_addplot(_df['SellSignal1'] * 1.04,type="scatter", color=['#ff0000']))
+        # _adps.append(mpf.make_addplot(_df['SellSignal2'] * 1.04,type="scatter", color=['#8a0000']))
         # HMA calculated risk signals
-        _adps.append(mpf.make_addplot(_df['HBuySignal1'],type="scatter", color=['#00aa00']))
-        _adps.append(mpf.make_addplot(_df['HSellSignal1'],type="scatter", color=['#ff0000']))
+        if(_df['HBuySignal1'].isnull().all() == False):
+            _adps.append(mpf.make_addplot(_df['HBuySignal1'] * 0.96,type="scatter", color=['#00aa00']))
+        if(_df['HSellSignal1'].isnull().all() == False):
+            _adps.append(mpf.make_addplot(_df['HSellSignal1'] * 1.04,type="scatter", color=['#ff0000']))
     if('riskdif' in _indicators):
-        if('risk' in indicators):
-                panels = panels - 1
         _adps.append(mpf.make_addplot(_df['riskdif'], color='#febf01',panel=panels)) # Riskdif plots a point whenver the two different risk 
-        _adps.append(mpf.make_addplot(_df['difcrossover'],type="scatter", color=['#febf01'])) # measurments cross (on their individually 
-        _adps.append(mpf.make_addplot(_df['difcrossunder'],type="scatter", color=['#adff2f'])) # normalized scales)
-    panels = panels + 1
+        if(_df['difcrossover'].isnull().all() == False):
+            _adps.append(mpf.make_addplot(_df['difcrossover'],type="scatter", color=['#febf01'])) # measurments cross (on their individually
+            _adps.append(mpf.make_addplot(_df['0'], panel=panels))
+        if(_df['difcrossunder'].isnull().all() == False):
+            _adps.append(mpf.make_addplot(_df['difcrossunder'],type="scatter", color=['#adff2f'])) # normalized scales)
+        panels = panels + 1
+    
     return _adps
 
 def mplfinance_plot(df, ticker, indicators, chart_type, syear, smonth, sday, eyear, emonth, eday):
     start = f"{syear}-{smonth}-{sday}"
     end = f"{eyear}-{emonth}-{eday}"
     df.index = pd.DatetimeIndex(df['Date'])
-    if(('riskscatter' in indicators) and (ticker not in RISK_SCATTER_TICKERS)):
-        indicators.remove('riskscatter')
+    # if(('riskscatter' in indicators) and (ticker not in RISK_SCATTER_TICKERS)):
+    #     indicators.remove('riskscatter')
     df = define_indicators(ticker, df, indicators)
     df_sub = df.loc[start:end]
-    s = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size': 24, 'text.color': '#c4d0ff',
+    s = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size': 16, 'text.color': '#c4d0ff',
                             'axes.labelcolor':'#c4d0ff', 'xtick.color':'#c4d0ff', 'ytick.color':'#c4d0ff'},
                             facecolor="#434345", edgecolor="#000000", figcolor="#292929", y_on_right=False) 
     fig = mpf.figure(figsize=(12, 8), style=s)
