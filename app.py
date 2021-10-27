@@ -20,7 +20,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
 RISK_SCATTER_TICKERS = ['BTC-USD', 'SPY']
 END=dt.datetime.today()+ dt.timedelta(days=1)
-START=END - dt.timedelta(days=365)
+START=END - dt.timedelta(days=730)
 
 
 @app.route("/",methods=["POST","GET"])
@@ -39,6 +39,7 @@ def index():
             new_tick = request.form['ticker']
             new_tick = new_tick.replace('-','.') # yahoo uses '-' in crypto tickers (BTC-USD) which interferes with the retrieving of variables from the url
             new_tick = new_tick.replace('/','')
+            save_to_csv_yahoo(ticker)
             new_start = request.form['start']
             new_start = new_start.replace('-','.') # same thing with dates, so I replaced them with '.'
             new_end = request.form['end']
@@ -54,9 +55,8 @@ def index():
                 global END                                          # not to appear
                 END = new_end_dt
             
-
-            
             new_indicators = request.form['indicators']
+            new_indicators = new_indicators.replace(',','')
             if(new_indicators == ''):
                 new_indicators = 'none'
             # return redirect("/mplfinance2-{new_tick}-{new_start}-{new_end}-{new_indicators}.png")
@@ -99,10 +99,11 @@ def plot_svg(num_x_points=50):
     FigureCanvasSVG(fig).print_svg(output)
     return Response(output.getvalue(), mimetype="image/svg+xml")
 
-@app.route("/mplfinance-<string:ticker>-<int:syear>.png", methods=["POST","GET"])
+@app.route("/mplfinance-<string:ticker>-<int:syear>.png", methods=["POST","GET"]) # No longer used
 def plot_finance(ticker='AAPL', syear=2010):
     output = io.BytesIO()
-    data = get_df_from_csv(ticker)
+    
+        
     # indicators = ['risk','riskscatter'] 
     indicators = [ 'risk','riskscatter', 'sma'] #'riskdif']
     # indicators = ['risk','riskscatter', 'sma', 'ext', 'hull'] 
@@ -111,6 +112,7 @@ def plot_finance(ticker='AAPL', syear=2010):
 
 @app.route("/mplfinance2-<string:ticker>-<start>-<end>-<indicators>.png", methods=["POST","GET"])
 def plot_finance2(ticker, start, end, indicators):
+    data = get_df_from_csv(ticker)
     output = io.BytesIO()
     ticker = ticker.replace('.','-')
     data = get_df_from_csv(ticker)
